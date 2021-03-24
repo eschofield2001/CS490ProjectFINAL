@@ -22,13 +22,23 @@ public class Main {
     //ArrayList of processes that need to be executed
     private static ArrayList<Process> processList = new ArrayList<>();
     //Displays the processes in the table
-    private static DefaultTableModel watingModel = new DefaultTableModel();
+    private static DefaultTableModel waitingModel = new DefaultTableModel();
     //Displays the processes in the table
     private static DefaultTableModel updatedModel = new DefaultTableModel();
     //Used by Executor to determine how many milliseconds to sleep for
     private static int timeUnit = 1000;
     //Used by Executor to determine if the system is paused
     private static boolean isPaused = true;
+    //JLabel containing the throughput. Will be updated by executor class
+    private static JLabel throughputValue = new JLabel("0.0");
+
+    /**
+     * Function to update the throughput displayed by throughputValue
+     * @param t The float representing the new throughput value to be displayed
+     */
+    public static void setThroughput(Float t){
+        throughputValue.setText(String.valueOf(t));
+    }
 
     //Functions to get the above private values. Will be used by Executor class
     //For phase 3, could add integer field to indicate which processList should be returned
@@ -49,16 +59,16 @@ public class Main {
     }
 
     /**
-     * Function to return the watingModel representing the table with the processes
-     * @return DefaultTableModel watingModel
+     * Function to return the waitingModel representing the table with the processes
+     * @return DefaultTableModel waitingModel
      */
     public static DefaultTableModel getModel() {
-        return watingModel;
+        return waitingModel;
     }
 
     /**
-     * Function to return the watingModel representing the table with the processes
-     * @return DefaultTableModel watingModel
+     * Function to return the waitingModel representing the table with the processes
+     * @return DefaultTableModel waitingModel
      */
     public static DefaultTableModel getUpdatedModel() {
         return updatedModel;
@@ -88,9 +98,9 @@ public class Main {
         //Create table that displays the current loaded processes - initialized when Start button is pressed for the first time
         JPanel tableDisplay = new JPanel(new BorderLayout());
         Object columns[] = {"Process Name", "Service Time"};
-        watingModel = new DefaultTableModel();
-        watingModel.setColumnIdentifiers(columns);
-        JTable processTable = new JTable(watingModel);
+        waitingModel = new DefaultTableModel();
+        waitingModel.setColumnIdentifiers(columns);
+        JTable processTable = new JTable(waitingModel);
         JScrollPane jsp = new JScrollPane(processTable, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
 
         JLabel tableTitle = new JLabel("Waiting Process Queue");
@@ -120,23 +130,19 @@ public class Main {
         cpuDisplay.add(timeDisplay, BorderLayout.NORTH);
 
         //Create CPU Display - Second half is creating the actual representation of the CPU
-        JPanel CPUcontainer = new JPanel(new GridLayout(3, 1));
+        JPanel CPUcontainer = new JPanel(new GridLayout(2, 1));
         CPUPanel cpu1 = new CPUPanel("CPU 1");
         CPUPanel cpu2 = new CPUPanel("CPU 2");
-        CPUPanel cpu3 = new CPUPanel("CPU 3");
         CPUcontainer.add(cpu1);
         CPUcontainer.add(cpu2);
-        CPUcontainer.add(cpu3);
         cpuDisplay.add(CPUcontainer, BorderLayout.CENTER);
 
         //Start execution on each CPU
         Lock threadLock = new ReentrantLock();
         Executor CPU1 = new Executor(cpu1, threadLock);
         Executor CPU2 = new Executor(cpu2, threadLock);
-        Executor CPU3 = new Executor(cpu3, threadLock);
         Thread execThread1 = new Thread(CPU1);
         Thread execThread2 = new Thread(CPU2);
-        Thread execThread3 = new Thread(CPU3);
 
         //Create top section of GUI that allows user to start or pause the CPU
         JLabel cpuState = new JLabel("System Uninitialized");
@@ -152,12 +158,11 @@ public class Main {
                     row = new Object[2];
                     row[0] = processList.get(i).getProcessID();
                     row[1] = processList.get(i).getServiceTime();
-                    watingModel.addRow(row);
+                    waitingModel.addRow(row);
                 }
                 //Start execThreads, which will work through processList and execute the processes on 3 CPUs
                 execThread1.start();
                 execThread2.start();
-                execThread3.start();
             }
             cpuState.setText("System Running");
         });
@@ -175,19 +180,31 @@ public class Main {
 
         //Creating south section for the turnaround time table
         //Create table that displays the arrival, finish, and turnaround times
-        JPanel timetableDisplay = new JPanel(new BorderLayout());
+        JPanel finishedDisplay = new JPanel(new GridLayout(2,1));
+
+        JPanel timetable = new JPanel(new BorderLayout());
         Object timeColumns[] = {"Process Name", "Arrival Time", "Service Time", "Finish Time", "TAT", "nTAT"};
         updatedModel = new DefaultTableModel();
         updatedModel.setColumnIdentifiers(timeColumns);
         JTable timeTable = new JTable(updatedModel);
         JScrollPane jsp2 = new JScrollPane(timeTable, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
-        timetableDisplay.add(jsp2, BorderLayout.CENTER);
+        timetable.add(jsp2, BorderLayout.CENTER);
+
+        JPanel throughputDisplay = new JPanel(new FlowLayout());
+        JLabel throughputText = new JLabel("Current throughput: ");
+        JLabel throughputUnitsText = new JLabel("process/unit of time.");
+        throughputDisplay.add(throughputText);
+        throughputDisplay.add(throughputValue);
+        throughputDisplay.add(throughputUnitsText);
+
+        finishedDisplay.add(timetable);
+        finishedDisplay.add(throughputDisplay);
 
         //Add sections to GUI and initialize
         mainFrame.add(topSection, BorderLayout.NORTH);
         mainFrame.add(tableDisplay, BorderLayout.WEST);
         mainFrame.add(cpuDisplay, BorderLayout.EAST);
-        mainFrame.add(timetableDisplay, BorderLayout.SOUTH);
+        mainFrame.add(finishedDisplay, BorderLayout.SOUTH);
 
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mainFrame.pack();
