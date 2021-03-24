@@ -31,13 +31,24 @@ public class Main {
     private static boolean isPaused = true;
     //JLabel containing the throughput. Will be updated by executor class
     private static JLabel throughputValue = new JLabel("0.0");
-
+    private static Executor CPU1;
+    private static Executor CPU2;
     /**
      * Function to update the throughput displayed by throughputValue
-     * @param t The float representing the new throughput value to be displayed
      */
-    public static void setThroughput(Float t){
-        throughputValue.setText(String.valueOf(t));
+    public static void setThroughput(){
+        int proc = CPU1.getProcFinished() + CPU2.getProcFinished();
+        int time = 0;
+
+        //Base the throughput on the max time passed between the two CPUs (they aren't going to match exactly due to threading)
+        if(CPU1.getTime() < CPU2.getTime()){
+            time = CPU2.getTime();
+        }
+        else{
+            time = CPU1.getTime();
+        }
+        Float throughput = (float)proc/time;
+        throughputValue.setText(String.valueOf(throughput));
     }
 
     //Functions to get the above private values. Will be used by Executor class
@@ -138,9 +149,10 @@ public class Main {
         cpuDisplay.add(CPUcontainer, BorderLayout.CENTER);
 
         //Start execution on each CPU
-        Lock threadLock = new ReentrantLock();
-        Executor CPU1 = new Executor(cpu1, threadLock);
-        Executor CPU2 = new Executor(cpu2, threadLock);
+        Lock processQueueLock = new ReentrantLock();
+        Lock throughputLock = new ReentrantLock();
+        CPU1 = new Executor(cpu1, processQueueLock, throughputLock);
+        CPU2 = new Executor(cpu2, processQueueLock, throughputLock);
         Thread execThread1 = new Thread(CPU1);
         Thread execThread2 = new Thread(CPU2);
 

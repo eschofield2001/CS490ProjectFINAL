@@ -7,20 +7,28 @@ import java.util.concurrent.locks.Lock;
  */
 public class Executor implements Runnable{
     private CPUPanel cpu;
-    private Lock threadLock;
-    //private Lock updatedLock;
+    private Lock processQueueLock;
+    private Lock throughputLock;
     private int systemTimer;
     private int procFinished;
 
     /**
      * Creates the executor and initializes the threadLock as well as sets the CPUPanel to be updated during process execution
      */
-    public Executor(CPUPanel cpu, Lock threadLock){
+    public Executor(CPUPanel cpu, Lock threadLock, Lock throughputLock){
         this.cpu = cpu;
-        this.threadLock = threadLock;
-        //this.updatedLock = updatedLock;
+        this.processQueueLock = threadLock;
+        this.throughputLock = throughputLock;
         systemTimer = 0;
         procFinished = 0;
+    }
+
+    public int getTime(){
+        return systemTimer;
+    }
+
+    public int getProcFinished(){
+        return procFinished;
     }
 
     /**
@@ -34,19 +42,21 @@ public class Executor implements Runnable{
             try{
                 while(!Main.getProcessList().isEmpty()){
                     //Lock processList while getting necessary information on next process to execute
-                    threadLock.lock();
+                    processQueueLock.lock();
                     try{
+                        //Check that the process next in line has actually "arrived". If not, sleep for a time unit and check again.
                         if(Main.getProcessList().get(0).getArrivalTime() <= systemTimer) {
                             cpu.setProcess(Main.getProcessList().get(0).getProcessID());
                             cpu.setTimeRem(Main.getProcessList().get(0).getServiceTime());
                             time = Main.getProcessList().get(0).getServiceTime();
-                            //Initialize table
 
+                            //Initialize table
                             timeRow = new Object[6];
                             timeRow[0] = Main.getProcessList().get(0).getProcessID();
                             timeRow[1] = Main.getProcessList().get(0).getArrivalTime();
                             timeRow[2] = Main.getProcessList().get(0).getServiceTime();
 
+                            //Update process table and queue
                             Main.getModel().removeRow(0);
                             Main.getProcessList().remove(0);
                             hasProcess = true;
@@ -54,11 +64,11 @@ public class Executor implements Runnable{
                         else{
                             Thread.sleep(Main.getTimeUnit());
                             systemTimer++;
-                            Main.setThroughput(procFinished/(float) systemTimer);
+                            Main.setThroughput();
                         }
                         //Move index 0 to finished list somewhere in here
                     }finally{
-                        threadLock.unlock();
+                        processQueueLock.unlock();
                     }
 
                     //Execute the process one second at a time, checking each second if the system is paused and pausing execution if it is
@@ -73,7 +83,7 @@ public class Executor implements Runnable{
                                 Thread.sleep(Main.getTimeUnit());
                                 cpu.setTimeRem(j);
                                 systemTimer++;
-                                Main.setThroughput(procFinished/(float) systemTimer);
+                                Main.setThroughput();
                             }
 
                         }
@@ -87,7 +97,7 @@ public class Executor implements Runnable{
                         Main.getUpdatedModel().addRow(timeRow);
                         hasProcess = false;
                         procFinished++;
-                        Main.setThroughput(procFinished/(float) systemTimer);
+                        Main.setThroughput();
                     }
 
                 }
