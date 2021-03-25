@@ -8,10 +8,8 @@ import java.awt.*;
  * JPanel that displays data such as CPU name, the process it is executing, as well as the time remaining until completion
  */
 public class CPUPanel extends JPanel {
-    JLabel cpuNameLabel;
-    JLabel pExec;
-    JLabel timeRem;
-
+    private JLabel pExec;
+    private JLabel timeRem;
 
     /**
      * Creates the panel and initializes the time and process name to blank values
@@ -21,7 +19,7 @@ public class CPUPanel extends JPanel {
         Border lineBorder = BorderFactory.createLineBorder(Color.black);
         setBorder(lineBorder);
 
-        cpuNameLabel = new JLabel(cpuName);
+        JLabel cpuNameLabel = new JLabel(cpuName);
         add(cpuNameLabel);
 
         JPanel cpuExec = new JPanel(new FlowLayout());

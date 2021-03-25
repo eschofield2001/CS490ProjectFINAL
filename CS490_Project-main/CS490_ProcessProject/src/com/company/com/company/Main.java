@@ -1,11 +1,9 @@
 package com.company;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -19,84 +17,22 @@ public class Main {
     private static final int FRAME_HEIGHT = 1000;
 
     //Global variables to be used for thread execution by Executor class:
-    //ArrayList of processes that need to be executed - will be used by the WaitingQueues for initialization
-    private static ArrayList<Process> processList = new ArrayList<>();
     //Displays the processes in the table
     private static WaitingQueue waitingProc1;
     private static WaitingQueue waitingProc2; //for phase 3
     //Displays the finished processes and data about them
     private static FinishedTable timeTable1;
     private static FinishedTable timeTable2; //for phase 3
-    //Used by Executor to determine how many milliseconds to sleep for
-    private static int timeUnit = 1000;
+    //Display for the time unit
+    private static TimeDisplay timeUnit;
     //Used by Executor to determine if the system is paused
     private static boolean isPaused = true;
     //JLabel containing the throughput. Will be updated by executor class
-    private static JLabel throughputValue = new JLabel("0.0");
+    private static ThroughputDisplay throughput1;
+    private static ThroughputDisplay throughput2; //for phase 3
+    //Executor objects representing the 2 CPUs
     private static Executor CPU1;
     private static Executor CPU2;
-
-    /**
-     * Returns the WaitingQueue corresponding to i
-     * @param i A number 1 or 2 representing which WaitingQueue (waitingProc1/2) to return
-     * @return WaitingQueue waitingProc1 or waitingProc2
-     */
-    public static WaitingQueue getWaitingProc(int i){
-        if (i == 1){
-            return waitingProc1;
-        }
-        else{
-            return waitingProc2;
-        }
-    }
-
-    /**
-     * Returns the FinishedTable corresponding to i
-     * @param i A number 1 or 2 representing which FinishedTable (timeTable1/2) to return
-     * @return FinishedTable timeTable1 or timeTable2
-     */
-    public static FinishedTable getFinishedTable(int i){
-        if (i == 1){
-            return timeTable1;
-        }
-        else{
-            return timeTable2;
-        }
-    }
-
-    /**
-     * Function to update the throughput displayed by throughputValue
-     */
-    public static void setThroughput(){
-        int proc = CPU1.getProcFinished() + CPU2.getProcFinished();
-        int time = 0;
-
-        //Base the throughput on the max time passed between the two CPUs (they aren't going to match exactly due to threading)
-        if(CPU1.getTime() < CPU2.getTime()){
-            time = CPU2.getTime();
-        }
-        else{
-            time = CPU1.getTime();
-        }
-        Float throughput = (float)proc/time;
-        throughputValue.setText(String.valueOf(throughput));
-    }
-
-    /**
-     * Function to return the timeUnit
-     * @return int timeUnit
-     */
-    public static int getTimeUnit() {
-        return timeUnit;
-    }
-
-    /**
-     * Function to return isPaused to indicate if the system is paused
-     * @return boolean isPaused
-     */
-    public static boolean getIsPaused(){
-        return isPaused;
-    }
 
     /**
      * Main function of the project
@@ -112,43 +48,27 @@ public class Main {
         mainFrame.setSize(d);
         mainFrame.setLayout(new BorderLayout());
 
-        //Create table that displays the current loaded processes - initialized when Start button is pressed for the first time
+        //Create table that displays the current loaded processes - GUI portion initialized when Start button is pressed for the first time, actual Process list is initialized when a file name is entered by the user
         waitingProc1 = new WaitingQueue();
+        waitingProc2 = new WaitingQueue();
 
         //Create CPU Display - First half is creating time input field
         JPanel cpuDisplay = new JPanel(new BorderLayout());
-        JPanel timeDisplay = new JPanel(new FlowLayout());
-        JLabel timeFirstHalf = new JLabel("1 time unit = ");
-        JLabel timeSecondHalf = new JLabel ("ms.");
-        final int FIELD_WIDTH = 10;
-        JTextField timeText = new JTextField(FIELD_WIDTH);
-        timeText.setText("Time");
-
-        //Updates timeUnit when enterButton is pressed
-        JButton enterButton = new JButton("Enter");
-        enterButton.addActionListener(e -> {
-            timeUnit = Integer.parseInt(timeText.getText());
-        });
-
-        timeDisplay.add(timeFirstHalf);
-        timeDisplay.add(timeText);
-        timeDisplay.add(timeSecondHalf);
-        timeDisplay.add(enterButton);
-        cpuDisplay.add(timeDisplay, BorderLayout.NORTH);
+        timeUnit = new TimeDisplay();
+        cpuDisplay.add(timeUnit, BorderLayout.NORTH);
 
         //Create CPU Display - Second half is creating the actual representation of the CPU
-        JPanel CPUcontainer = new JPanel(new GridLayout(2, 1));
+        JPanel CPUContainer = new JPanel(new GridLayout(2, 1));
         CPUPanel cpu1 = new CPUPanel("CPU 1");
         CPUPanel cpu2 = new CPUPanel("CPU 2");
-        CPUcontainer.add(cpu1);
-        CPUcontainer.add(cpu2);
-        cpuDisplay.add(CPUcontainer, BorderLayout.CENTER);
+        CPUContainer.add(cpu1);
+        CPUContainer.add(cpu2);
+        cpuDisplay.add(CPUContainer, BorderLayout.CENTER);
 
         //Start execution on each CPU
         Lock processQueueLock = new ReentrantLock();
-        Lock throughputLock = new ReentrantLock();
-        CPU1 = new Executor(cpu1, processQueueLock, throughputLock);
-        CPU2 = new Executor(cpu2, processQueueLock, throughputLock);
+        CPU1 = new Executor(cpu1, processQueueLock);
+        CPU2 = new Executor(cpu2, processQueueLock);
         Thread execThread1 = new Thread(CPU1);
         Thread execThread2 = new Thread(CPU2);
 
@@ -161,7 +81,7 @@ public class Main {
             //Need to press start button to initialize process table
             if(cpuState.getText().equals("System Uninitialized")){
                 //Initialize waitingProc
-                waitingProc1.initializeWaitingQueue(processList);
+                waitingProc1.initializeWaitingQueue();
                 //Start execThreads, which will work through processList and execute the processes on 3 CPUs
                 execThread1.start();
                 execThread2.start();
@@ -184,18 +104,13 @@ public class Main {
         timeTable1 = new FinishedTable();
 
         //Create throughput display
-        JPanel throughputDisplay = new JPanel(new FlowLayout());
-        JLabel throughputText = new JLabel("Current throughput: ");
-        JLabel throughputUnitsText = new JLabel("process/unit of time.");
-        throughputDisplay.add(throughputText);
-        throughputDisplay.add(throughputValue);
-        throughputDisplay.add(throughputUnitsText);
+        throughput1 = new ThroughputDisplay();
 
         //Create panel to display TAT table and throughput
         JPanel finishedDisplay = new JPanel(new GridLayout(2,1));
 
         finishedDisplay.add(timeTable1);
-        finishedDisplay.add(throughputDisplay);
+        finishedDisplay.add(throughput1);
 
         //Add sections to GUI and initialize
         mainFrame.add(topSection, BorderLayout.NORTH);
@@ -254,7 +169,6 @@ public class Main {
      */
     public static void processReader(String fileName){
         FileReader infile = null;
-        ArrayList<Process> processes = new ArrayList<>();
 
         try{
             assert fileName != null;
@@ -288,10 +202,73 @@ public class Main {
                     process.setPriority(Integer.parseInt(processInfo[3]));
                 }
             }
-            processes.add(process);
+            waitingProc1.getProcessList().add(process);
+            waitingProc2.getProcessList().add(process);
             process = new Process();
         }
 
-        processList = new ArrayList<>(processes);
+    }
+
+    /**
+     * Returns the WaitingQueue corresponding to i
+     * @param i A number 1 or 2 representing which WaitingQueue (waitingProc1/2) to return
+     * @return WaitingQueue waitingProc1 or waitingProc2
+     */
+    public static WaitingQueue getWaitingProc(int i){
+        if (i == 1){
+            return waitingProc1;
+        }
+        else {
+            return waitingProc2;
+        }
+    }
+
+    /**
+     * Returns the FinishedTable corresponding to i
+     * @param i A number 1 or 2 representing which FinishedTable (timeTable1/2) to return
+     * @return FinishedTable timeTable1 or timeTable2
+     */
+    public static FinishedTable getFinishedTable(int i){
+        if (i == 1){
+            return timeTable1;
+        }
+        else{
+            return timeTable2;
+        }
+    }
+
+    /**
+     * Function to update the throughput displayed by throughputValue
+     */
+    public static void setThroughput(int i){
+        int proc = CPU1.getProcFinished() + CPU2.getProcFinished();
+        int time = Math.max(CPU1.getTime(), CPU2.getTime());
+
+        //Base the throughput on the max time passed between the two CPUs (they aren't going to match exactly due to threading)
+        Float throughputVal = (float)proc/time;
+
+        if(i == 1){
+            throughput1.setThroughput(String.valueOf(throughputVal));
+        }
+        else if (i == 2){
+            throughput2.setThroughput(String.valueOf(throughputVal));
+        }
+
+    }
+
+    /**
+     * Function to return the timeUnit
+     * @return TimeDisplay timeUnit
+     */
+    public static TimeDisplay getTimeUnit() {
+        return timeUnit;
+    }
+
+    /**
+     * Function to return isPaused to indicate if the system is paused
+     * @return boolean isPaused
+     */
+    public static boolean getIsPaused(){
+        return isPaused;
     }
 }

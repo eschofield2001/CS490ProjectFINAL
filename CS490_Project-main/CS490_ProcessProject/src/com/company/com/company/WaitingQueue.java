@@ -9,13 +9,14 @@ import java.util.ArrayList;
  * Class to represent the waiting queue and its GUI
  */
 public class WaitingQueue extends JPanel{
-    DefaultTableModel model;
-    ArrayList<Process> processList;
+    private DefaultTableModel model;
+    private ArrayList<Process> processList;
 
     //Creates and initializes empty waiting queue GUI
     public WaitingQueue(){
+        processList = new ArrayList<>();
         setLayout(new BorderLayout());
-        Object columns[] = {"Process Name", "Service Time"};
+        Object[] columns = {"Process Name", "Service Time"};
         model = new DefaultTableModel();
         model.setColumnIdentifiers(columns);
         JTable processTable = new JTable(model);
@@ -28,16 +29,15 @@ public class WaitingQueue extends JPanel{
     }
 
     /**
-     * Adds processes to waiting queue GUI + initializes processList
-     * @param processes List of processes to be added to the GUI
+     * Adds processes to waiting queue GUI
      */
-    public void initializeWaitingQueue(ArrayList<Process> processes){
-        processList = processes;
+    public void initializeWaitingQueue(){
+
         Object[] row;
-        for(int i = 0; i < processList.size(); i++){
+        for (Process process : processList) {
             row = new Object[2];
-            row[0] = processList.get(i).getProcessID();
-            row[1] = processList.get(i).getServiceTime();
+            row[0] = process.getProcessID();
+            row[1] = process.getServiceTime();
             model.addRow(row);
         }
     }

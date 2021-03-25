@@ -8,25 +8,31 @@ import java.util.concurrent.locks.Lock;
 public class Executor implements Runnable{
     private CPUPanel cpu;
     private Lock processQueueLock;
-    private Lock throughputLock;
     private int systemTimer;
     private int procFinished;
 
     /**
      * Creates the executor and initializes the threadLock as well as sets the CPUPanel to be updated during process execution
      */
-    public Executor(CPUPanel cpu, Lock threadLock, Lock throughputLock){
+    public Executor(CPUPanel cpu, Lock threadLock){
         this.cpu = cpu;
         this.processQueueLock = threadLock;
-        this.throughputLock = throughputLock;
         systemTimer = 0;
         procFinished = 0;
     }
 
+    /**
+     * Returns the systemTimer
+     * @return int systemTimer
+     */
     public int getTime(){
         return systemTimer;
     }
 
+    /**
+     * Returns the number of processes executed
+     * @return int procFinished
+     */
     public int getProcFinished(){
         return procFinished;
     }
@@ -37,7 +43,7 @@ public class Executor implements Runnable{
     public void run(){
         int time = 0;
         Object[] timeRow = new Object[0];
-        Boolean hasProcess = false;
+        boolean hasProcess = false;
         while (!Main.getIsPaused()) {
             try{
                 while(!Main.getWaitingProc(1).getProcessList().isEmpty()){
@@ -61,9 +67,9 @@ public class Executor implements Runnable{
                             hasProcess = true;
                         }
                         else{
-                            Thread.sleep(Main.getTimeUnit());
+                            Thread.sleep(Main.getTimeUnit().getTimeUnit());
                             systemTimer++;
-                            Main.setThroughput();
+                            Main.setThroughput(1);
                         }
                         //Move index 0 to finished list somewhere in here
                     }finally{
@@ -75,20 +81,20 @@ public class Executor implements Runnable{
                         for (int j = time; j >= 0; j--) {
                             if (Main.getIsPaused()) {
                                 //Do nothing if paused
-                                Thread.sleep(Main.getTimeUnit());
+                                Thread.sleep(Main.getTimeUnit().getTimeUnit());
                                 j++;
                             } else {
                                 //Sleep for a second and update timer
-                                Thread.sleep(Main.getTimeUnit());
+                                Thread.sleep(Main.getTimeUnit().getTimeUnit());
                                 cpu.setTimeRem(j);
                                 systemTimer++;
-                                Main.setThroughput();
+                                Main.setThroughput(1);
                             }
 
                         }
                         systemTimer--;
-                        int taT = systemTimer - Integer.valueOf((Integer) timeRow[1]);
-                        float nTaT = (float) taT / Integer.valueOf((Integer) timeRow[2]);
+                        int taT = systemTimer - (Integer) timeRow[1];
+                        float nTaT = (float) taT / (Integer) timeRow[2];
                         timeRow[3] = systemTimer;
                         timeRow[4] = taT;
                         timeRow[5] = nTaT;
@@ -96,7 +102,7 @@ public class Executor implements Runnable{
                         Main.getFinishedTable(1).getModel().addRow(timeRow);
                         hasProcess = false;
                         procFinished++;
-                        Main.setThroughput();
+                        Main.setThroughput(1);
                     }
 
                 }
