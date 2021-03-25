@@ -19,12 +19,14 @@ public class Main {
     private static final int FRAME_HEIGHT = 1000;
 
     //Global variables to be used for thread execution by Executor class:
-    //ArrayList of processes that need to be executed
+    //ArrayList of processes that need to be executed - will be used by the WaitingQueues for initialization
     private static ArrayList<Process> processList = new ArrayList<>();
     //Displays the processes in the table
-    private static DefaultTableModel waitingModel = new DefaultTableModel();
-    //Displays the processes in the table
-    private static DefaultTableModel updatedModel = new DefaultTableModel();
+    private static WaitingQueue waitingProc1;
+    private static WaitingQueue waitingProc2; //for phase 3
+    //Displays the finished processes and data about them
+    private static FinishedTable timeTable1;
+    private static FinishedTable timeTable2; //for phase 3
     //Used by Executor to determine how many milliseconds to sleep for
     private static int timeUnit = 1000;
     //Used by Executor to determine if the system is paused
@@ -33,6 +35,35 @@ public class Main {
     private static JLabel throughputValue = new JLabel("0.0");
     private static Executor CPU1;
     private static Executor CPU2;
+
+    /**
+     * Returns the WaitingQueue corresponding to i
+     * @param i A number 1 or 2 representing which WaitingQueue (waitingProc1/2) to return
+     * @return WaitingQueue waitingProc1 or waitingProc2
+     */
+    public static WaitingQueue getWaitingProc(int i){
+        if (i == 1){
+            return waitingProc1;
+        }
+        else{
+            return waitingProc2;
+        }
+    }
+
+    /**
+     * Returns the FinishedTable corresponding to i
+     * @param i A number 1 or 2 representing which FinishedTable (timeTable1/2) to return
+     * @return FinishedTable timeTable1 or timeTable2
+     */
+    public static FinishedTable getFinishedTable(int i){
+        if (i == 1){
+            return timeTable1;
+        }
+        else{
+            return timeTable2;
+        }
+    }
+
     /**
      * Function to update the throughput displayed by throughputValue
      */
@@ -51,16 +82,6 @@ public class Main {
         throughputValue.setText(String.valueOf(throughput));
     }
 
-    //Functions to get the above private values. Will be used by Executor class
-    //For phase 3, could add integer field to indicate which processList should be returned
-    /**
-     * Function to return the processList ArrayList of processes
-     * @return ArrayList<Process> processList
-     */
-    public static ArrayList<Process> getProcessList() {
-        return processList;
-    }
-
     /**
      * Function to return the timeUnit
      * @return int timeUnit
@@ -69,21 +90,6 @@ public class Main {
         return timeUnit;
     }
 
-    /**
-     * Function to return the waitingModel representing the table with the processes
-     * @return DefaultTableModel waitingModel
-     */
-    public static DefaultTableModel getModel() {
-        return waitingModel;
-    }
-
-    /**
-     * Function to return the waitingModel representing the table with the processes
-     * @return DefaultTableModel waitingModel
-     */
-    public static DefaultTableModel getUpdatedModel() {
-        return updatedModel;
-    }
     /**
      * Function to return isPaused to indicate if the system is paused
      * @return boolean isPaused
@@ -107,17 +113,7 @@ public class Main {
         mainFrame.setLayout(new BorderLayout());
 
         //Create table that displays the current loaded processes - initialized when Start button is pressed for the first time
-        JPanel tableDisplay = new JPanel(new BorderLayout());
-        Object columns[] = {"Process Name", "Service Time"};
-        waitingModel = new DefaultTableModel();
-        waitingModel.setColumnIdentifiers(columns);
-        JTable processTable = new JTable(waitingModel);
-        JScrollPane jsp = new JScrollPane(processTable, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
-
-        JLabel tableTitle = new JLabel("Waiting Process Queue");
-
-        tableDisplay.add(jsp, BorderLayout.CENTER);
-        tableDisplay.add(tableTitle, BorderLayout.NORTH);
+        waitingProc1 = new WaitingQueue();
 
         //Create CPU Display - First half is creating time input field
         JPanel cpuDisplay = new JPanel(new BorderLayout());
@@ -164,14 +160,8 @@ public class Main {
             isPaused = false;
             //Need to press start button to initialize process table
             if(cpuState.getText().equals("System Uninitialized")){
-                Object[] row;
-                //Initialize table
-                for(int i = 0; i < processList.size(); i++){
-                    row = new Object[2];
-                    row[0] = processList.get(i).getProcessID();
-                    row[1] = processList.get(i).getServiceTime();
-                    waitingModel.addRow(row);
-                }
+                //Initialize waitingProc
+                waitingProc1.initializeWaitingQueue(processList);
                 //Start execThreads, which will work through processList and execute the processes on 3 CPUs
                 execThread1.start();
                 execThread2.start();
@@ -190,18 +180,10 @@ public class Main {
         topSection.add(pauseButton);
         topSection.add(cpuState);
 
-        //Creating south section for the turnaround time table
-        //Create table that displays the arrival, finish, and turnaround times
-        JPanel finishedDisplay = new JPanel(new GridLayout(2,1));
+        //Creating the turnaround time table
+        timeTable1 = new FinishedTable();
 
-        JPanel timetable = new JPanel(new BorderLayout());
-        Object timeColumns[] = {"Process Name", "Arrival Time", "Service Time", "Finish Time", "TAT", "nTAT"};
-        updatedModel = new DefaultTableModel();
-        updatedModel.setColumnIdentifiers(timeColumns);
-        JTable timeTable = new JTable(updatedModel);
-        JScrollPane jsp2 = new JScrollPane(timeTable, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
-        timetable.add(jsp2, BorderLayout.CENTER);
-
+        //Create throughput display
         JPanel throughputDisplay = new JPanel(new FlowLayout());
         JLabel throughputText = new JLabel("Current throughput: ");
         JLabel throughputUnitsText = new JLabel("process/unit of time.");
@@ -209,12 +191,15 @@ public class Main {
         throughputDisplay.add(throughputValue);
         throughputDisplay.add(throughputUnitsText);
 
-        finishedDisplay.add(timetable);
+        //Create panel to display TAT table and throughput
+        JPanel finishedDisplay = new JPanel(new GridLayout(2,1));
+
+        finishedDisplay.add(timeTable1);
         finishedDisplay.add(throughputDisplay);
 
         //Add sections to GUI and initialize
         mainFrame.add(topSection, BorderLayout.NORTH);
-        mainFrame.add(tableDisplay, BorderLayout.WEST);
+        mainFrame.add(waitingProc1, BorderLayout.WEST);
         mainFrame.add(cpuDisplay, BorderLayout.EAST);
         mainFrame.add(finishedDisplay, BorderLayout.SOUTH);
 

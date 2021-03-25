@@ -40,25 +40,24 @@ public class Executor implements Runnable{
         Boolean hasProcess = false;
         while (!Main.getIsPaused()) {
             try{
-                while(!Main.getProcessList().isEmpty()){
+                while(!Main.getWaitingProc(1).getProcessList().isEmpty()){
                     //Lock processList while getting necessary information on next process to execute
                     processQueueLock.lock();
                     try{
                         //Check that the process next in line has actually "arrived". If not, sleep for a time unit and check again.
-                        if(Main.getProcessList().get(0).getArrivalTime() <= systemTimer) {
-                            cpu.setProcess(Main.getProcessList().get(0).getProcessID());
-                            cpu.setTimeRem(Main.getProcessList().get(0).getServiceTime());
-                            time = Main.getProcessList().get(0).getServiceTime();
+                        if(Main.getWaitingProc(1).getProcessList().get(0).getArrivalTime() <= systemTimer) {
+                            cpu.setProcess(Main.getWaitingProc(1).getProcessList().get(0).getProcessID());
+                            cpu.setTimeRem(Main.getWaitingProc(1).getProcessList().get(0).getServiceTime());
+                            time = Main.getWaitingProc(1).getProcessList().get(0).getServiceTime();
 
                             //Initialize table
                             timeRow = new Object[6];
-                            timeRow[0] = Main.getProcessList().get(0).getProcessID();
-                            timeRow[1] = Main.getProcessList().get(0).getArrivalTime();
-                            timeRow[2] = Main.getProcessList().get(0).getServiceTime();
+                            timeRow[0] = Main.getWaitingProc(1).getProcessList().get(0).getProcessID();
+                            timeRow[1] = Main.getWaitingProc(1).getProcessList().get(0).getArrivalTime();
+                            timeRow[2] = Main.getWaitingProc(1).getProcessList().get(0).getServiceTime();
 
                             //Update process table and queue
-                            Main.getModel().removeRow(0);
-                            Main.getProcessList().remove(0);
+                            Main.getWaitingProc(1).removeRow(0);
                             hasProcess = true;
                         }
                         else{
@@ -94,7 +93,7 @@ public class Executor implements Runnable{
                         timeRow[4] = taT;
                         timeRow[5] = nTaT;
 
-                        Main.getUpdatedModel().addRow(timeRow);
+                        Main.getFinishedTable(1).getModel().addRow(timeRow);
                         hasProcess = false;
                         procFinished++;
                         Main.setThroughput();
