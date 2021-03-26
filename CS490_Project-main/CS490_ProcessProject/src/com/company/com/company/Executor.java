@@ -6,19 +6,26 @@ import java.util.concurrent.locks.Lock;
  * Class that mimics CPU execution of a list of processes in FIFO order.
  */
 public class Executor implements Runnable{
-    private CPUPanel cpu;
-    private Lock processQueueLock;
+    private final CPUPanel cpu;
+    private final Lock processQueueLock;
+    private final Lock finishedTableLock;
     private int systemTimer;
     private int procFinished;
+    private final WaitingQueue waitingProc;
+    private final FinishedTable finishedProc;
+    //Will add Throughput Display in phase 3, shared with other CPU in phase 2
 
     /**
      * Creates the executor and initializes the threadLock as well as sets the CPUPanel to be updated during process execution
      */
-    public Executor(CPUPanel cpu, Lock threadLock){
+    public Executor(CPUPanel cpu, Lock threadLock, WaitingQueue waitingProc, FinishedTable finishedProc, Lock finishedLock){
         this.cpu = cpu;
         this.processQueueLock = threadLock;
         systemTimer = 0;
         procFinished = 0;
+        this.waitingProc = waitingProc;
+        this.finishedProc = finishedProc;
+        finishedTableLock = finishedLock;
     }
 
     /**
@@ -44,26 +51,27 @@ public class Executor implements Runnable{
         int time = 0;
         Object[] timeRow = new Object[0];
         boolean hasProcess = false;
+
         while (!Main.getIsPaused()) {
             try{
-                while(!Main.getWaitingProc(1).getProcessList().isEmpty()){
+                while(!waitingProc.getProcessList().isEmpty()){
                     //Lock processList while getting necessary information on next process to execute
                     processQueueLock.lock();
                     try{
                         //Check that the process next in line has actually "arrived". If not, sleep for a time unit and check again.
-                        if(Main.getWaitingProc(1).getProcessList().get(0).getArrivalTime() <= systemTimer) {
-                            cpu.setProcess(Main.getWaitingProc(1).getProcessList().get(0).getProcessID());
-                            cpu.setTimeRem(Main.getWaitingProc(1).getProcessList().get(0).getServiceTime());
-                            time = Main.getWaitingProc(1).getProcessList().get(0).getServiceTime();
+                        if(waitingProc.getProcessList().get(0).getArrivalTime() <= systemTimer) {
+                            cpu.setProcess(waitingProc.getProcessList().get(0).getProcessID());
+                            cpu.setTimeRem(waitingProc.getProcessList().get(0).getServiceTime());
+                            time = waitingProc.getProcessList().get(0).getServiceTime();
 
                             //Initialize table
                             timeRow = new Object[6];
-                            timeRow[0] = Main.getWaitingProc(1).getProcessList().get(0).getProcessID();
-                            timeRow[1] = Main.getWaitingProc(1).getProcessList().get(0).getArrivalTime();
-                            timeRow[2] = Main.getWaitingProc(1).getProcessList().get(0).getServiceTime();
+                            timeRow[0] = waitingProc.getProcessList().get(0).getProcessID();
+                            timeRow[1] = waitingProc.getProcessList().get(0).getArrivalTime();
+                            timeRow[2] = waitingProc.getProcessList().get(0).getServiceTime();
 
                             //Update process table and queue
-                            Main.getWaitingProc(1).removeRow(0);
+                            waitingProc.removeRow(0);
                             hasProcess = true;
                         }
                         else{
@@ -71,7 +79,6 @@ public class Executor implements Runnable{
                             systemTimer++;
                             Main.setThroughput(1);
                         }
-                        //Move index 0 to finished list somewhere in here
                     }finally{
                         processQueueLock.unlock();
                     }
@@ -99,7 +106,14 @@ public class Executor implements Runnable{
                         timeRow[4] = taT;
                         timeRow[5] = nTaT;
 
-                        Main.getFinishedTable(1).getModel().addRow(timeRow);
+                        //Add timeRow to the finished process table
+                        finishedTableLock.lock();
+                        try{
+                            finishedProc.getModel().addRow(timeRow);
+                        } finally{
+                            finishedTableLock.unlock();
+                        }
+
                         hasProcess = false;
                         procFinished++;
                         Main.setThroughput(1);

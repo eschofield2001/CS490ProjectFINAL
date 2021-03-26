@@ -16,13 +16,9 @@ public class Main {
     private static final int FRAME_WIDTH = 1000;
     private static final int FRAME_HEIGHT = 1000;
 
-    //Global variables to be used for thread execution by Executor class:
     //Displays the processes in the table
     private static WaitingQueue waitingProc1;
     private static WaitingQueue waitingProc2; //for phase 3
-    //Displays the finished processes and data about them
-    private static FinishedTable timeTable1;
-    private static FinishedTable timeTable2; //for phase 3
     //Display for the time unit
     private static TimeDisplay timeUnit;
     //Used by Executor to determine if the system is paused
@@ -65,10 +61,16 @@ public class Main {
         CPUContainer.add(cpu2);
         cpuDisplay.add(CPUContainer, BorderLayout.CENTER);
 
+        //Creating the turnaround time table
+        //Displays the finished processes and data about them
+        FinishedTable timeTable1 = new FinishedTable();
+        //FinishedTable timeTable2 = new FinishedTable();
+
         //Start execution on each CPU
         Lock processQueueLock = new ReentrantLock();
-        CPU1 = new Executor(cpu1, processQueueLock);
-        CPU2 = new Executor(cpu2, processQueueLock);
+        Lock finishedTableLock = new ReentrantLock();
+        CPU1 = new Executor(cpu1, processQueueLock, waitingProc1, timeTable1, finishedTableLock);
+        CPU2 = new Executor(cpu2, processQueueLock, waitingProc1, timeTable1, finishedTableLock);
         Thread execThread1 = new Thread(CPU1);
         Thread execThread2 = new Thread(CPU2);
 
@@ -95,16 +97,14 @@ public class Main {
             isPaused = true;
         });
 
-        JPanel topSection = new JPanel(new FlowLayout());
-        topSection.add(startButton);
-        topSection.add(pauseButton);
-        topSection.add(cpuState);
-
-        //Creating the turnaround time table
-        timeTable1 = new FinishedTable();
+        JPanel buttonSection = new JPanel(new FlowLayout());
+        buttonSection.add(startButton);
+        buttonSection.add(pauseButton);
+        buttonSection.add(cpuState);
 
         //Create throughput display
         throughput1 = new ThroughputDisplay();
+        //throughput2 = new ThroughputDisplay();
 
         //Create panel to display TAT table and throughput
         JPanel finishedDisplay = new JPanel(new GridLayout(2,1));
@@ -113,7 +113,7 @@ public class Main {
         finishedDisplay.add(throughput1);
 
         //Add sections to GUI and initialize
-        mainFrame.add(topSection, BorderLayout.NORTH);
+        mainFrame.add(buttonSection, BorderLayout.NORTH);
         mainFrame.add(waitingProc1, BorderLayout.WEST);
         mainFrame.add(cpuDisplay, BorderLayout.EAST);
         mainFrame.add(finishedDisplay, BorderLayout.SOUTH);
@@ -207,34 +207,6 @@ public class Main {
             process = new Process();
         }
 
-    }
-
-    /**
-     * Returns the WaitingQueue corresponding to i
-     * @param i A number 1 or 2 representing which WaitingQueue (waitingProc1/2) to return
-     * @return WaitingQueue waitingProc1 or waitingProc2
-     */
-    public static WaitingQueue getWaitingProc(int i){
-        if (i == 1){
-            return waitingProc1;
-        }
-        else {
-            return waitingProc2;
-        }
-    }
-
-    /**
-     * Returns the FinishedTable corresponding to i
-     * @param i A number 1 or 2 representing which FinishedTable (timeTable1/2) to return
-     * @return FinishedTable timeTable1 or timeTable2
-     */
-    public static FinishedTable getFinishedTable(int i){
-        if (i == 1){
-            return timeTable1;
-        }
-        else{
-            return timeTable2;
-        }
     }
 
     /**
