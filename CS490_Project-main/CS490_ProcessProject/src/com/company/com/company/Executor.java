@@ -13,12 +13,13 @@ public class Executor implements Runnable{
     private int procFinished;
     private final WaitingQueue waitingProc;
     private final FinishedTable finishedProc;
-    //Will add Throughput Display in phase 3, shared with other CPU in phase 2
+    private final NTATDisplay ntatDisplay;
+    private float totalntat;
 
     /**
      * Creates the executor and initializes the threadLock as well as sets the CPUPanel to be updated during process execution
      */
-    public Executor(CPUPanel cpu, Lock threadLock, WaitingQueue waitingProc, FinishedTable finishedProc, Lock finishedLock){
+    public Executor(CPUPanel cpu, Lock threadLock, WaitingQueue waitingProc, FinishedTable finishedProc, Lock finishedLock, NTATDisplay ntatDisplay){
         this.cpu = cpu;
         this.processQueueLock = threadLock;
         systemTimer = 0;
@@ -26,6 +27,9 @@ public class Executor implements Runnable{
         this.waitingProc = waitingProc;
         this.finishedProc = finishedProc;
         finishedTableLock = finishedLock;
+        this.ntatDisplay = ntatDisplay;
+        totalntat = 0.0f;
+
     }
 
     /**
@@ -77,7 +81,6 @@ public class Executor implements Runnable{
                         else{
                             Thread.sleep(Main.getTimeUnit().getTimeUnit());
                             systemTimer++;
-                            Main.setThroughput(1);
                         }
                     }finally{
                         processQueueLock.unlock();
@@ -95,7 +98,6 @@ public class Executor implements Runnable{
                                 Thread.sleep(Main.getTimeUnit().getTimeUnit());
                                 cpu.setTimeRem(j);
                                 systemTimer++;
-                                Main.setThroughput(1);
                             }
 
                         }
@@ -105,6 +107,7 @@ public class Executor implements Runnable{
                         timeRow[3] = systemTimer;
                         timeRow[4] = taT;
                         timeRow[5] = nTaT;
+                        totalntat += nTaT;
 
                         //Add timeRow to the finished process table
                         finishedTableLock.lock();
@@ -116,7 +119,7 @@ public class Executor implements Runnable{
 
                         hasProcess = false;
                         procFinished++;
-                        Main.setThroughput(1);
+                        ntatDisplay.setAvg(procFinished, totalntat);
                     }
 
                 }

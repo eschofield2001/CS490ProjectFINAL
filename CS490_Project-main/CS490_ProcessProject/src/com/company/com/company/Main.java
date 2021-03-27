@@ -23,12 +23,6 @@ public class Main {
     private static TimeDisplay timeUnit;
     //Used by Executor to determine if the system is paused
     private static boolean isPaused = true;
-    //JLabel containing the throughput. Will be updated by executor class
-    private static ThroughputDisplay throughput1;
-    private static ThroughputDisplay throughput2; //for phase 3
-    //Executor objects representing the 2 CPUs
-    private static Executor CPU1;
-    private static Executor CPU2;
 
     /**
      * Main function of the project
@@ -44,33 +38,53 @@ public class Main {
         mainFrame.setSize(d);
         mainFrame.setLayout(new BorderLayout());
 
+        //Create CPU Display - First half is creating time input field
+        JPanel systemDisplay1 = new JPanel(new BorderLayout());
+        JPanel systemDisplay2 = new JPanel(new BorderLayout());
+
         //Create table that displays the current loaded processes - GUI portion initialized when Start button is pressed for the first time, actual Process list is initialized when a file name is entered by the user
         waitingProc1 = new WaitingQueue();
         waitingProc2 = new WaitingQueue();
+        systemDisplay1.add(waitingProc1, BorderLayout.WEST);
+        systemDisplay2.add(waitingProc2, BorderLayout.WEST);
 
-        //Create CPU Display - First half is creating time input field
-        JPanel cpuDisplay = new JPanel(new BorderLayout());
-        timeUnit = new TimeDisplay();
-        cpuDisplay.add(timeUnit, BorderLayout.NORTH);
-
-        //Create CPU Display - Second half is creating the actual representation of the CPU
-        JPanel CPUContainer = new JPanel(new GridLayout(2, 1));
-        CPUPanel cpu1 = new CPUPanel("CPU 1");
-        CPUPanel cpu2 = new CPUPanel("CPU 2");
-        CPUContainer.add(cpu1);
-        CPUContainer.add(cpu2);
-        cpuDisplay.add(CPUContainer, BorderLayout.CENTER);
+        //Create systemDisplay for CPUs 1 and 2 and add the CPUs
+        CPUPanel cpu1 = new CPUPanel("CPU 1 (HRRN)");
+        CPUPanel cpu2 = new CPUPanel("CPU 2 (RR)");
+        systemDisplay1.add(cpu1, BorderLayout.EAST);
+        systemDisplay2.add(cpu2, BorderLayout.CENTER);
 
         //Creating the turnaround time table
         //Displays the finished processes and data about them
         FinishedTable timeTable1 = new FinishedTable();
-        //FinishedTable timeTable2 = new FinishedTable();
+        FinishedTable timeTable2 = new FinishedTable();
+
+        //Create the nTAT displays
+        NTATDisplay ntat1 = new NTATDisplay();
+        NTATDisplay ntat2 = new NTATDisplay();
+
+        JPanel finishedProcDis1 = new JPanel(new GridLayout(2,1));
+        JPanel finishedProcDis2 = new JPanel(new GridLayout(2,1));
+
+        finishedProcDis1.add(timeTable1);
+        finishedProcDis1.add(ntat1);
+
+        finishedProcDis2.add(timeTable2);
+        finishedProcDis2.add(ntat2);
+
+        systemDisplay1.add(finishedProcDis1, BorderLayout.SOUTH);
+        systemDisplay2.add(finishedProcDis2, BorderLayout.SOUTH);
+
+        //Add RR time slice to systemDisplay2
+        TimeSliceDisplay rrTimeSlice = new TimeSliceDisplay();
+        systemDisplay2.add(rrTimeSlice, BorderLayout.EAST);
 
         //Start execution on each CPU
         Lock processQueueLock = new ReentrantLock();
         Lock finishedTableLock = new ReentrantLock();
-        CPU1 = new Executor(cpu1, processQueueLock, waitingProc1, timeTable1, finishedTableLock);
-        CPU2 = new Executor(cpu2, processQueueLock, waitingProc1, timeTable1, finishedTableLock);
+        //Executor objects representing the 2 CPUs
+        Executor CPU1 = new Executor(cpu1, processQueueLock, waitingProc1, timeTable1, finishedTableLock, ntat1);
+        Executor CPU2 = new Executor(cpu2, processQueueLock, waitingProc2, timeTable2, finishedTableLock, ntat2);
         Thread execThread1 = new Thread(CPU1);
         Thread execThread2 = new Thread(CPU2);
 
@@ -84,7 +98,7 @@ public class Main {
             if(cpuState.getText().equals("System Uninitialized")){
                 //Initialize waitingProc
                 waitingProc1.initializeWaitingQueue();
-                //Start execThreads, which will work through processList and execute the processes on 3 CPUs
+                waitingProc2.initializeWaitingQueue();
                 execThread1.start();
                 execThread2.start();
             }
@@ -98,25 +112,16 @@ public class Main {
         });
 
         JPanel buttonSection = new JPanel(new FlowLayout());
+        timeUnit = new TimeDisplay();
         buttonSection.add(startButton);
         buttonSection.add(pauseButton);
         buttonSection.add(cpuState);
-
-        //Create throughput display
-        throughput1 = new ThroughputDisplay();
-        //throughput2 = new ThroughputDisplay();
-
-        //Create panel to display TAT table and throughput
-        JPanel finishedDisplay = new JPanel(new GridLayout(2,1));
-
-        finishedDisplay.add(timeTable1);
-        finishedDisplay.add(throughput1);
+        buttonSection.add(timeUnit);
 
         //Add sections to GUI and initialize
         mainFrame.add(buttonSection, BorderLayout.NORTH);
-        mainFrame.add(waitingProc1, BorderLayout.WEST);
-        mainFrame.add(cpuDisplay, BorderLayout.EAST);
-        mainFrame.add(finishedDisplay, BorderLayout.SOUTH);
+        mainFrame.add(systemDisplay1, BorderLayout.WEST);
+        mainFrame.add(systemDisplay2, BorderLayout.EAST);
 
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mainFrame.pack();
@@ -205,25 +210,6 @@ public class Main {
             waitingProc1.getProcessList().add(process);
             waitingProc2.getProcessList().add(process);
             process = new Process();
-        }
-
-    }
-
-    /**
-     * Function to update the throughput displayed by throughputValue
-     */
-    public static void setThroughput(int i){
-        int proc = CPU1.getProcFinished() + CPU2.getProcFinished();
-        int time = Math.max(CPU1.getTime(), CPU2.getTime());
-
-        //Base the throughput on the max time passed between the two CPUs (they aren't going to match exactly due to threading)
-        Float throughputVal = (float)proc/time;
-
-        if(i == 1){
-            throughput1.setThroughput(String.valueOf(throughputVal));
-        }
-        else if (i == 2){
-            throughput2.setThroughput(String.valueOf(throughputVal));
         }
 
     }
