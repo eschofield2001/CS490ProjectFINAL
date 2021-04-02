@@ -83,8 +83,8 @@ public class Main {
         Lock processQueueLock = new ReentrantLock();
         Lock finishedTableLock = new ReentrantLock();
         //Executor objects representing the 2 CPUs
-        Executor CPU1 = new Executor(cpu1, processQueueLock, waitingProc1, timeTable1, finishedTableLock, ntat1);
-        Executor CPU2 = new Executor(cpu2, processQueueLock, waitingProc2, timeTable2, finishedTableLock, ntat2);
+        Processor CPU1 = new Processor(cpu1, processQueueLock, waitingProc1, timeTable1, finishedTableLock, ntat1);
+        Processor CPU2 = new Processor(cpu2, processQueueLock, waitingProc2, timeTable2, finishedTableLock, ntat2);
         Thread execThread1 = new Thread(CPU1);
         Thread execThread2 = new Thread(CPU2);
 

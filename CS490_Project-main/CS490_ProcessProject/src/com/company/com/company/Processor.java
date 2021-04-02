@@ -5,21 +5,21 @@ import java.util.concurrent.locks.Lock;
 /**
  * Class that mimics CPU execution of a list of processes in FIFO order.
  */
-public class Executor implements Runnable{
-    private final CPUPanel cpu;
-    private final Lock processQueueLock;
-    private final Lock finishedTableLock;
-    private int systemTimer;
-    private int procFinished;
-    private final WaitingQueue waitingProc;
-    private final FinishedTable finishedProc;
-    private final NTATDisplay ntatDisplay;
-    private float totalntat;
+public class Processor implements Runnable{
+    protected final CPUPanel cpu;
+    protected final Lock processQueueLock;
+    protected final Lock finishedTableLock;
+    protected int systemTimer;
+    protected int procFinished;
+    protected final WaitingQueue waitingProc;
+    protected final FinishedTable finishedProc;
+    protected final NTATDisplay ntatDisplay;
+    protected float totalntat;
 
     /**
      * Creates the executor and initializes the threadLock as well as sets the CPUPanel to be updated during process execution
      */
-    public Executor(CPUPanel cpu, Lock threadLock, WaitingQueue waitingProc, FinishedTable finishedProc, Lock finishedLock, NTATDisplay ntatDisplay){
+    public Processor(CPUPanel cpu, Lock threadLock, WaitingQueue waitingProc, FinishedTable finishedProc, Lock finishedLock, NTATDisplay ntatDisplay){
         this.cpu = cpu;
         this.processQueueLock = threadLock;
         systemTimer = 0;
