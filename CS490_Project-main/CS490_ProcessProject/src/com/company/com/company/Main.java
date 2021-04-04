@@ -86,9 +86,9 @@ public class Main {
 //        Processor CPU1 = new Processor(cpu1, processQueueLock, waitingProc1, timeTable1, finishedTableLock, ntat1);
 //        Processor CPU2 = new Processor(cpu2, processQueueLock, waitingProc2, timeTable2, finishedTableLock, ntat2);
         //CPU implementing round robin
-        Processor CPU1 = new ProcessorRR(cpu1, processQueueLock, waitingProc1, timeTable1, finishedTableLock, ntat1);
+        Processor CPU2 = new ProcessorRR(cpu2, processQueueLock, waitingProc2, timeTable2, finishedTableLock, ntat2, rrTimeSlice);
         //CPU implementing HRRN
-        Processor CPU2 = new Processor(cpu2, processQueueLock, waitingProc2, timeTable2, finishedTableLock, ntat2);
+        Processor CPU1 = new Processor(cpu1, processQueueLock, waitingProc1, timeTable1, finishedTableLock, ntat1);
         Thread execThread1 = new Thread(CPU1);
         Thread execThread2 = new Thread(CPU2);
 
@@ -206,6 +206,7 @@ public class Main {
                 }
                 else if (i == 2){
                     process.setServiceT(Integer.parseInt(processInfo[2]));
+                    process.setTimeRem(Integer.parseInt(processInfo[2]));
                 }
                 else{
                     process.setPriority(Integer.parseInt(processInfo[3]));

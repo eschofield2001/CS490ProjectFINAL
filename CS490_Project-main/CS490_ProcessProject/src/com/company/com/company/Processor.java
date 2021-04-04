@@ -88,7 +88,7 @@ public class Processor implements Runnable{
 
                     //Execute the process one second at a time, checking each second if the system is paused and pausing execution if it is
                     if(hasProcess) {
-                        for (int j = time; j >= 0; j--) {
+                        for (int j = time; j > 0; j--) {
                             if (Main.getIsPaused()) {
                                 //Do nothing if paused
                                 Thread.sleep(Main.getTimeUnit().getTimeUnit());
@@ -96,12 +96,12 @@ public class Processor implements Runnable{
                             } else {
                                 //Sleep for a second and update timer
                                 Thread.sleep(Main.getTimeUnit().getTimeUnit());
-                                cpu.setTimeRem(j);
+                                cpu.setTimeRem(j-1);
                                 systemTimer++;
                             }
 
                         }
-                        systemTimer--;
+                        //systemTimer--;
                         int taT = systemTimer - (Integer) timeRow[1];
                         float nTaT = (float) taT / (Integer) timeRow[2];
                         timeRow[3] = systemTimer;

@@ -8,6 +8,7 @@ public class Process{
     private int serviceT;
     private int priority;
     private String processID;
+    private int timeRem;
 
     /**
      * Constructs a process and initializes the values
@@ -21,6 +22,7 @@ public class Process{
         serviceT = sTime;
         priority = p;
         processID = pID;
+        timeRem = sTime;
     }
 
     /**
@@ -31,6 +33,14 @@ public class Process{
         serviceT = 0;
         priority = 0;
         processID = null;
+    }
+
+    public void setTimeRem(int sTime){
+        timeRem = sTime;
+    }
+
+    public int getTimeRem(){
+        return timeRem;
     }
 
     /**
