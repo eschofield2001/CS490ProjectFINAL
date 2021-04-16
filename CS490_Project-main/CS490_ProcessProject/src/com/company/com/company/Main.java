@@ -21,6 +21,8 @@ public class Main {
     private static WaitingQueue waitingProc2; //for phase 3
     //Display for the time unit
     private static TimeDisplay timeUnit;
+    //Display for round robin time slice
+    private static TimeSliceDisplay timeSlice;
     //Used by Executor to determine if the system is paused
     private static boolean isPaused = true;
 
@@ -86,9 +88,9 @@ public class Main {
 //        Processor CPU1 = new Processor(cpu1, processQueueLock, waitingProc1, timeTable1, finishedTableLock, ntat1);
 //        Processor CPU2 = new Processor(cpu2, processQueueLock, waitingProc2, timeTable2, finishedTableLock, ntat2);
         //CPU implementing round robin
-        Processor CPU2 = new ProcessorRR(cpu2, processQueueLock, waitingProc2, timeTable2, finishedTableLock, ntat2, rrTimeSlice);
+        Processor CPU1 = new ProcessorRR(cpu1, processQueueLock, waitingProc1, timeTable1, finishedTableLock, ntat1, rrTimeSlice);
         //CPU implementing HRRN
-        Processor CPU1 = new Processor(cpu1, processQueueLock, waitingProc1, timeTable1, finishedTableLock, ntat1);
+        Processor CPU2 = new ProcessorHRRN(cpu2, processQueueLock, waitingProc2, timeTable2, finishedTableLock, ntat2);
         Thread execThread1 = new Thread(CPU1);
         Thread execThread2 = new Thread(CPU2);
 
@@ -117,10 +119,12 @@ public class Main {
 
         JPanel buttonSection = new JPanel(new FlowLayout());
         timeUnit = new TimeDisplay();
+        timeSlice = new TimeSliceDisplay();
         buttonSection.add(startButton);
         buttonSection.add(pauseButton);
         buttonSection.add(cpuState);
         buttonSection.add(timeUnit);
+        buttonSection.add(timeSlice);
 
         //Add sections to GUI and initialize
         mainFrame.add(buttonSection, BorderLayout.NORTH);
@@ -225,6 +229,14 @@ public class Main {
      */
     public static TimeDisplay getTimeUnit() {
         return timeUnit;
+    }
+
+    /**
+     * Function to return the round robin timeSlice
+     * @return TimeSliceDisplay timeSliceDisplay
+     */
+    public static TimeSliceDisplay getTimeSlice(){
+        return timeSlice;
     }
 
     /**

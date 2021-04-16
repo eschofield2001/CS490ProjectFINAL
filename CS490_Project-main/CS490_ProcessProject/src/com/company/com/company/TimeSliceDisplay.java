@@ -24,7 +24,19 @@ public class TimeSliceDisplay extends JPanel{
         add(enterButton);
     }
 
+    /**
+     * Returns timeSlice
+     * @return int timeSlices
+     */
     public int getTimeSlice(){
         return timeSlice;
+    }
+
+    /**
+     * Sets timeSlice equal to t
+     * @param t An integer representing the new time slice
+     */
+    public void setTimeSlice(int t){
+        timeSlice = t;
     }
 }
