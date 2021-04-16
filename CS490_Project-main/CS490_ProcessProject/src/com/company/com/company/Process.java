@@ -6,9 +6,11 @@ package com.company;
 public class Process{
     private int arrivalT;
     private int serviceT;
+    private int waitT;
     private int priority;
     private String processID;
     private int timeRem;
+    private float hrrnRatio;
 
     /**
      * Constructs a process and initializes the values
@@ -17,12 +19,14 @@ public class Process{
      * @param p The priority of the process
      * @param pID The name of the process
      */
-    public Process(int aTime, int sTime, int p, String pID){
+    public Process(int aTime, int sTime, int wTime, int p, String pID, float hrrnRatio){
         arrivalT = aTime;
         serviceT = sTime;
+        waitT = wTime;
         priority = p;
         processID = pID;
         timeRem = sTime;
+        hrrnRatio = hrrnRatio;
     }
 
     /**
@@ -32,6 +36,8 @@ public class Process{
         arrivalT = 0;
         serviceT = 0;
         priority = 0;
+        waitT = 0;
+        hrrnRatio = 0;
         processID = null;
     }
 
@@ -58,6 +64,18 @@ public class Process{
     public void setServiceT(int sTime){
         serviceT = sTime;
     }
+
+    public void setWaitT(int wTime){
+        waitT = wTime;
+    }
+
+    public int getWaitT() {return waitT;}
+
+    public void setHrrnRatio(float hrrnRatio){
+        hrrnRatio = hrrnRatio;
+    }
+
+    public float getHrrnRatio() {return hrrnRatio;}
 
     /**
      * Sets the value of priority to p

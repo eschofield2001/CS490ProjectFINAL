@@ -1,6 +1,7 @@
 package com.company;
 
 import java.util.concurrent.locks.Lock;
+import java.util.*;
 
 public class ProcessorHRRN extends Processor{
     /**
@@ -18,47 +19,57 @@ public class ProcessorHRRN extends Processor{
     }
 
     /**
-     * Returns the systemTimer
-     * @return int systemTimer
-     */
-    public int getTime(){
-        return systemTimer;
-    }
-
-    /**
-     * Returns the number of processes executed
-     * @return int procFinished
-     */
-    public int getProcFinished(){
-        return procFinished;
-    }
-
-    /**
      * Overrides run in Processor super class to implement the HRRN algorithm
      */
+
+    public void setHrrnRatio(List<Process> remainingProcesses, int tExecutedServiceTime){
+        for (Process i: remainingProcesses){
+            int wTime = tExecutedServiceTime-i.getArrivalTime();
+            float hrrnRatio = (wTime + i.getServiceTime())/i.getServiceTime();
+            i.setWaitT(wTime);
+            i.setHrrnRatio(hrrnRatio);
+        }
+    }
+
+    public Process getCurrentProcess(List<Process> remainingProcesses) {
+        float max = 0;
+        Process currentProc = null;
+        for (Process i : remainingProcesses) {
+            if (i.getHrrnRatio() > max) {
+                max = i.getHrrnRatio();
+                currentProc = i;
+            }
+        }
+        return currentProc;
+    }
+
     public void run(){
         Object[] timeRow;
         Process currentProc = null;
+        List<Process> remainingProcesses = new ArrayList<>();
         boolean hasProcess = false;
+        int tExecutedServiceTime = 0; //add service time of all process executed
 
         while(!Main.getIsPaused()){
             while(!waitingProc.getProcessList().isEmpty()) {
                 //Since it isn't shared, don't need to use lock for this phase
                 if(waitingProc.getProcessList().get(0).getArrivalTime() <= systemTimer){
                     currentProc = waitingProc.getProcessList().get(0);
+                    tExecutedServiceTime += currentProc.getServiceTime();
                     cpu.setProcess(currentProc.getProcessID());
                     hasProcess = true;
                     waitingProc.removeRow(0);
                 }
 
-                //Check if there is a previously executed process that can run again
+                //Check if there is a previously arrived process that can run
                 else if(waitingProc.getProcessList().get(waitingProc.getProcessList().size() - 1).getArrivalTime() <= systemTimer){
-                    currentProc = waitingProc.getProcessList().get(waitingProc.getProcessList().size() - 1);
+                    remainingProcesses = waitingProc.getProcessList();
+                    setHrrnRatio(remainingProcesses, tExecutedServiceTime);
+                    currentProc = getCurrentProcess(remainingProcesses);
                     cpu.setProcess(currentProc.getProcessID());
-                    cpu.setTimeRem(currentProc.getTimeRem());
+                    tExecutedServiceTime += currentProc.getServiceTime();
                     hasProcess = true;
                     waitingProc.removeRow(waitingProc.getProcessList().size() - 1);
-
                 }
 
                 else{

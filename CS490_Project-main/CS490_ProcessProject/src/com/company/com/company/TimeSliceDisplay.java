@@ -3,8 +3,13 @@ package com.company;
 import javax.swing.*;
 import java.awt.*;
 
+//Class to represent the set time slice GUI
 public class TimeSliceDisplay extends JPanel{
     int timeSlice;
+
+    /**
+     * Constructor. Initializes timeSlice and creates the time slice GUI for round robin algorithm
+     */
 
     public TimeSliceDisplay(){
         timeSlice = 2;
@@ -26,7 +31,7 @@ public class TimeSliceDisplay extends JPanel{
 
     /**
      * Returns timeSlice
-     * @return int timeSlices
+     * @return int timeSlice
      */
     public int getTimeSlice(){
         return timeSlice;
